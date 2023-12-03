@@ -1,11 +1,17 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+// const Stripe = require("stripe");
+// const stripe = Stripe(
+//   "sk_test_51OIuzLKbVrj73WOdsjI1xAt5dE49TlcNAB2MXNmf6h2hIK4F8PfgKYigtMaHxu9ORoy91wCcmvTrPVXoLdHBWQDO00oHuj9VQA"
+// );
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
+
 app.use(cors());
 app.use(express.json());
-require("dotenv").config();
 
 // middleware
 app.use(cors());
@@ -14,7 +20,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // midleware
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.64k1q4w.mongodb.net/?retryWrites=true&w=majority`;
-console.log(uri);
+//console.log(uri);
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -109,21 +115,21 @@ async function run() {
       res.send(result);
     });
 
-       app.get("/users/:email", verifyToken, async (req, res) => {
-         const email = req.params.email;
+    app.get("/users/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
 
-         if (email !== req.decoded.email) {
-           return res.status(403).send({ message: "forbidden access" });
-         }
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
 
-         const query = { email: email };
-         const user = await usersCollection.findOne(query);
-         let admin = false;
-         if (user) {
-           admin = user?.role === "Admin";
-         }
-         res.send({ admin });
-       });
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "Admin";
+      }
+      res.send({ admin });
+    });
 
     app.get("/meal", async (req, res) => {
       const cursor = mealCollection.find();
@@ -149,6 +155,22 @@ async function run() {
       };
       const result = await usersCollection.updateOne(filter, updatedDoc);
       res.send(result);
+    });
+    // payment intent
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      console.log(amount, "amount inside the intent");
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
 
     console.log(
