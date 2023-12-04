@@ -91,6 +91,11 @@ async function run() {
       const result = await mealupCollection.insertOne(mealdetail);
       res.send(result);
     });
+    app.get("/mealup", async (req, res) => {
+      const cursor = mealupCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -136,11 +141,22 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+    app.get("/meal/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await mealCollection.findOne(query);
+      res.send(result);
+    });
 
     app.post("/reqmeal", async (req, res) => {
       const mealdetail = req.body;
       console.log(mealdetail);
       const result = await reqmealCollection.insertOne(mealdetail);
+      res.send(result);
+    });
+    app.get("/reqmeal", async (req, res) => {
+      const cursor = reqmealCollection.find();
+      const result = await cursor.toArray();
       res.send(result);
     });
 
@@ -156,6 +172,93 @@ async function run() {
       const result = await usersCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
+    app.put("/reqmeal/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          stats: "Served",
+        },
+      };
+      const result = await reqmealCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+    app.put("/users/check/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const cart = req.body;
+      const updatedDoc = {
+        $set: {
+          status: cart.status,
+        },
+      };
+      const result = await usersCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+    app.put("/mealup/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const cart = req.body;
+      const updatedDoc = {
+        $set: {
+          likes: cart.counts,
+        },
+      };
+      const result = await mealupCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    app.put("/meal/update/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const upProduct = req.body;
+      const Product = {
+        $set: {
+          image: upProduct.image,
+          name: upProduct.name,
+          username: upProduct.username,
+          useremail: upProduct.useremail,
+          type: upProduct.type,
+          price: upProduct.price,
+          description: upProduct.description,
+          rating: upProduct.rating,
+          username: upProduct.username,
+          ing: upProduct.ing,
+          pdate: upProduct.pdate,
+          likes: upProduct.likes,
+          review: upProduct.review,
+        },
+      };
+      const result = await mealCollection.updateOne(filter, Product, options);
+      res.send(result);
+    });
+
+    //delete
+
+    app.delete("/reqmeal/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await reqmealCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.delete("/meal/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await mealCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // payment intent
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
